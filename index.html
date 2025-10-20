@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Factor Matrix</title>
+<style>
+  body { margin:0; font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; }
+  .wrap { padding:16px; }
+  .table-wrap { overflow:auto; margin-bottom:12px; }
+  table { border-collapse:collapse; width:max-content; min-width:100%; }
+  th, td { border:1px solid #d1d5db; padding:6px 8px; text-align:center; min-width:90px; }
+  th.factor { background:#f8fafc; position:sticky; top:0; z-index:1; writing-mode:vertical-rl; transform:rotate(180deg); white-space:nowrap; text-align:left; }
+  th.rowhead { position:sticky; left:0; background:#f8fafc; text-align:left; z-index:2; }
+  td.gray, th.gray { background:#e5e7eb; color:#6b7280; }
+  select { width:100%; padding:4px; border:1px solid #d1d5db; border-radius:6px; background:#fff; }
+  .savebar { display:flex; gap:8px; align-items:center; }
+  .savebar input { padding:6px 8px; border:1px solid #d1d5db; border-radius:6px; min-width:240px; }
+  .savebar button { padding:8px 12px; border:1px solid #d1d5db; border-radius:8px; background:#fff; cursor:pointer; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Student Enrollment Survey</h1>
+  <p class="desc">
+    Four symbols can be used to denote the direction of relationship between the attributes which are as follows:<br>
+    <strong>V</strong> - attribute x will help to alleviate or influence attribute y;<br>
+    <strong>A</strong> - attribute x will be alleviated or influenced by attribute y;<br>
+    <strong>X</strong> - attributes x and y will help to achieve each other;<br>
+    <strong>O</strong> - attributes x and y are unrelated.<br><br>
+    (<em>Attribute 'x'</em> is for the row elements and <em>attribute 'y'</em> is for the column elements in the matrix)
+  </p>
+  <div id="table" class="table-wrap"></div>
+
+  <!-- Save controls (at the end of the table) -->
+  <div class="savebar">
+    <label for="userCode">User code / file name:</label>
+    <input id="userCode" type="text" placeholder="e.g., BU-2025-Alpha">
+    <button id="saveDoc">Save as Word (.doc)</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var factors = [
+    "Campus Experience, Facilities & Safety",
+    "Marketing, Communication & Outreach",
+    "Academic Reputation & External Recognition",
+    "Faculty Quality & Development",
+    "Cost, Financial Aid & Affordability",
+    "Program Offerings",
+    "Career Outcomes, Alumni Network & Job Placement",
+    "Admissions Criteria & Accessibility",
+    "Flexibility, Technology & Online Learning",
+    "International partnership"
+  ];
+  var defenitions = [
+    "CThe overall quality and appeal of the campus environment, including its aesthetics, housing, dining, recreational amenities (e.g. places to hang out, restaurants, entertainment venues, fitness and recreational centers), This also encompasses student organizations (e.g., fraternities and sororities), university sports teams and support services such as health care and academic advising.",
+    "The effectiveness of the college\'s outreach through websites, social media, emails, brochures, and the level of personalized engagement during the application process. Innovative approaches for marketing the programs, organizing campus visits for students and their families, and taking into consideration socio-demographic elements and distance from student’s home are examples of this factor.",
+    "The perceived quality of the institutions academic programs, quality of learning in the classroom, education facilities, and overall reputation, including rankings and specialized accreditation. But only Education Facilities and Learning Environment sub factors are considered to be applicable in Universities’ short-term policies.",
+    "The qualifications, expertise, teaching quality, and reputation of the university’s academic staff. This factor includes faculty members’ academic credentials, research output, industry experience, teaching effectiveness, approachability, and engagement with students.Paying the employees competitive salary and benefits, supporting the faculty for research and academic development fall under necessary investment in employees",
+    "The total expense of attending the college, including tuition, fees, and the availability and clarity of financial aid, scholarships, and grants. The students will weigh the benefits of earning a college degree against its cost.",
+    "Relates to the availability and diversity of academic programs and majors that align with students’ career interests and goals. This includes the presence of specialized degrees, interdisciplinary opportunities, and curriculum relevance to current job market demands. Adult and online programs and certificates are also examples of this factor.",
+    "The perceived and actual potential for career advancement, including internships, co-op programs, job placement rates, and alumni success stories.",
+    "The difficulty of gaining admission based on GPA,test scores, application requirements, and the clarity or flexibility of the admissions process.",
+    "The availability and quality of new modalities for offering a program, such as digital learning tools, hybrid/online courses, and campus technology infrastructure to support modern learning needs.",
+    "University\’s formal collaborations and affiliations with institutions in other countries"
+  ];
+  var codes = ["CEFS","MCO","ARER","FQD","CFAA","PO","COAN","ACA","FTOL","IP"];
+  var N = factors.length;
+
+  function el(tag, attrs, child) {
+    var n = document.createElement(tag);
+    if (attrs) {
+      for (var k in attrs) {
+        if (k === "class") n.className = attrs[k];
+        else if (k === "text") n.textContent = attrs[k];
+        else if (k === "title") n.setAttribute("title", attrs[k]);
+        else n.setAttribute(k, attrs[k]);
+      }
+    }
+    if (child !== undefined && child !== null) {
+      if (Array.isArray(child))
+        child.forEach(function (c) {
+          n.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+        });
+      else n.appendChild(typeof child === "string" ? document.createTextNode(child) : child);
+    }
+    return n;
+  }
+
+  function buildTable(container) {
+    var table = el("table");
+    var thead = el("thead");
+    var tbody = el("tbody");
+
+    // Header row (first cell corner)
+    var hr = el("tr");
+    hr.appendChild(el("th", { class: "factor gray", text: "" })); 
+    for (var j = 0; j < N; j++) {
+      hr.appendChild(
+        el("th", {
+          class: "factor",
+          title: defenitions[j],
+          text: factors[j]
+        })
+      );
+    }
+    thead.appendChild(hr);
+
+    // Body rows
+    for (var i = 0; i < N; i++) {
+      var tr = el("tr");
+      tr.appendChild(
+        el("th", {
+          class: "rowhead",
+          title: defenitions[i],
+          text: factors[i]
+        })
+      );
+
+      for (var j = 0; j < N; j++) {
+        if (i > j) {
+          var sel = el("select");
+          ["-","V", "A", "X", "O"].forEach(function (v) {
+            sel.appendChild(el("option", { value: v, text: v }));
+          });
+          tr.appendChild(el("td", {}, sel));
+        } else {
+          tr.appendChild(el("td", { class: "gray" }, "—"));
+        }
+      }
+      tbody.appendChild(tr);
+    }
+
+    table.appendChild(thead);
+    table.appendChild(tbody);
+    container.innerHTML = "";
+    container.appendChild(table);
+  }
+
+
+    // Export to Word file with short codes for rows/columns
+  function exportToWord() {
+    var code = document.getElementById("userCode").value.trim();
+    if (!code) { alert("Please enter the user code (file name)."); return; }
+
+    var html = [];
+    html.push('<!DOCTYPE html><html><head><meta charset="utf-8">');
+    html.push('<title>' + code + '</title>');
+    html.push('<style>');
+    html.push('table{border-collapse:collapse;width:auto}');
+    html.push('th,td{border:1px solid #999;padding:6px 8px;text-align:center}');
+    html.push('th.row{ text-align:left }');
+    html.push('td.gray{background:#eee;color:#666}');
+    html.push('th.vhead{vertical-align:bottom; width:40px; height:220px}');
+    html.push('.vtxt{display:inline-block; white-space:nowrap;');
+    html.push('  writing-mode:vertical-rl; -ms-writing-mode:tb-rl; writing-mode:tb-rl; transform:rotate(180deg);}');
+    html.push('</style>');
+    html.push('</head><body>');
+    html.push('<h2>' + escapeHtml(code) + ' – Factor Matrix</h2>');
+    html.push('<table>');
+
+    // Header row (use codes vertically)
+    html.push('<tr><th class="row"></th>');
+    for (var j = 0; j < N; j++) {
+      html.push('<th class="vhead"><div class="vtxt">' + escapeHtml(codes[j]) + '</div></th>');
+    }
+    html.push('</tr>');
+
+    // Rows (use codes horizontally)
+    for (var i = 0; i < N; i++) {
+      html.push('<tr>');
+      html.push('<th class="row">' + escapeHtml(codes[i]) + '</th>');
+      for (var j = 0; j < N; j++) {
+        if (i > j) {
+          var sel = document.querySelector('#table table tbody tr:nth-child(' + (i+1) + ') td:nth-child(' + (j+2) + ') select');
+          var val = sel ? (sel.value || "") : "";
+          html.push('<td>' + (val ? val : '') + '</td>');
+        } else {
+          html.push('<td class="gray">—</td>');
+        }
+      }
+      html.push('</tr>');
+    }
+
+    html.push('</table></body></html>');
+
+    var blob = new Blob(['\ufeff', html.join('')], { type: 'application/msword' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = code + '.doc';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(ch){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]);
+    });
+  }
+
+  buildTable(document.getElementById("table"));
+  document.getElementById("saveDoc").addEventListener("click", exportToWord);
+})();
+</script>
+</body>
+</html>
